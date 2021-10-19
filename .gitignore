@@ -1,1 +1,7 @@
 
+**.pem
+*.jar
+yb/env*
+MetricsData.xlsx
+
+*/~$gabyte-PerfTest-Analysis.docx

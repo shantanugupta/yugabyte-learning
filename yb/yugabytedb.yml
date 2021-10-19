@@ -1,0 +1,56 @@
+global:
+  scrape_interval: 5s # Set the scrape interval to every 5 seconds. Default is every 1 minute.
+  evaluation_interval: 5s # Evaluate rules every 5 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
+
+# YugabyteDB configuration to scrape Prometheus time-series metrics
+scrape_configs:
+  - job_name: "yugabytedb"
+    metrics_path: /prometheus-metrics
+    relabel_configs:
+      - target_label: "node_prefix"
+        replacement: "cluster-1"
+    metric_relabel_configs:
+      # Save the name of the metric so we can group_by since we cannot by __name__ directly...
+      - source_labels: ["__name__"]
+        regex: "(.*)"
+        target_label: "saved_name"
+        replacement: "$1"
+      # The following basically retrofit the handler_latency_* metrics to label format.
+      - source_labels: ["__name__"]
+        regex: "handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(.*)"
+        target_label: "server_type"
+        replacement: "$1"
+      - source_labels: ["__name__"]
+        regex: "handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(.*)"
+        target_label: "service_type"
+        replacement: "$2"
+      - source_labels: ["__name__"]
+        regex: "handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(_sum|_count)?"
+        target_label: "service_method"
+        replacement: "$3"
+      - source_labels: ["__name__"]
+        regex: "handler_latency_(yb_[^_]*)_([^_]*)_([^_]*)(_sum|_count)?"
+        target_label: "__name__"
+        replacement: "rpc_latency$4"
+
+    static_configs:
+      - targets: ["10.0.0.66:7000", "10.0.1.108:7000", "10.0.1.155:7000"]
+        labels:
+          export_type: "master_export"
+
+      - targets: ["10.0.0.66:9000", "10.0.1.108:9000", "10.0.1.155:9000"]
+        labels:
+          export_type: "tserver_export"
+
+      - targets: ["10.0.0.66:9042", "10.0.1.108:9042", "10.0.1.155:9042"]
+        labels:
+          export_type: "cql_export"
+
+      - targets: ["10.0.0.66:5433", "10.0.1.108:5433", "10.0.1.155:5433"]
+        labels:
+          export_type: "ysql_export"
+
+      - targets: ["10.0.0.66:6379", "10.0.1.108:6379", "10.0.1.155:6379"]
+        labels:
+          export_type: "redis_export"
